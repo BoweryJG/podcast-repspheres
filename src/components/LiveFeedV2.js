@@ -79,24 +79,44 @@ export default function LiveFeedV2({ onPlayEpisode }) {
   // State for selected category
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Fetch Apple Podcasts
+  // Fetch Apple Podcasts through backend
   const fetchApplePodcasts = async () => {
     try {
-      const results = await fetchApplePodcastsData(SEARCH_QUERIES.apple);
+      const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/apple', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          searchTerm: SEARCH_QUERIES.apple,
+          limit: 15
+        })
+      });
       
-      return results.map(podcast => ({
-        id: podcast.trackId,
-        title: podcast.trackName,
-        author: podcast.artistName,
-        description: podcast.description || podcast.summary,
-        image: podcast.artworkUrl600,
-        source: 'apple',
-        sourceUrl: podcast.trackViewUrl,
-        genre: podcast.primaryGenreName,
-        episodeCount: podcast.trackCount,
-        rating: podcast.averageUserRating,
-        releaseDate: podcast.releaseDate
-      }));
+      if (response.ok) {
+        const podcasts = await response.json();
+        return podcasts.map(podcast => ({
+          ...podcast,
+          source: 'apple'
+        }));
+      } else {
+        // Fallback to direct iTunes API if backend fails
+        const results = await fetchApplePodcastsData(SEARCH_QUERIES.apple);
+        return results.map(podcast => ({
+          id: podcast.trackId,
+          title: podcast.trackName,
+          author: podcast.artistName,
+          description: podcast.description || podcast.summary,
+          image: podcast.artworkUrl600,
+          source: 'apple',
+          sourceUrl: podcast.trackViewUrl,
+          genre: podcast.primaryGenreName,
+          episodeCount: podcast.trackCount,
+          rating: podcast.averageUserRating,
+          releaseDate: podcast.releaseDate
+        }));
+      }
     } catch (error) {
       console.error('Error fetching Apple podcasts:', error);
       return [];
@@ -112,65 +132,37 @@ export default function LiveFeedV2({ onPlayEpisode }) {
       ? RSS_FEEDS 
       : RSS_FEEDS.filter(feed => feed.category === selectedCategory);
     
-    // Fetch multiple RSS feeds in parallel
-    const feedPromises = feedsToFetch.slice(0, 5).map(async (feed) => {
+    // Fetch multiple RSS feeds through your backend
+    const feedPromises = feedsToFetch.slice(0, 8).map(async (feed) => {
       try {
-        // Use Netlify function in production, direct fetch in development
-        if (process.env.NODE_ENV === 'production') {
-          const response = await fetch('/.netlify/functions/fetch-rss', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ feedUrl: feed.url })
-          });
+        const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/rss', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ 
+            feedUrl: feed.url,
+            feedName: feed.name,
+            category: feed.category,
+            maxEpisodes: 3
+          })
+        });
+        
+        if (response.ok) {
+          const episodes = await response.json();
           
-          if (response.ok) {
-            const xmlText = await response.text();
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(xmlText, 'text/xml');
-            
-            // Parse episodes from XML
-            const items = xml.querySelectorAll('item');
-            const episodes = Array.from(items).slice(0, 3).map((item, index) => ({
-              id: `rss-${feed.name}-${index}`,
-              title: item.querySelector('title')?.textContent || '',
-              author: item.querySelector('author')?.textContent || feed.name,
-              description: item.querySelector('description')?.textContent?.replace(/<[^>]*>/g, '') || '',
-              pubDate: new Date(item.querySelector('pubDate')?.textContent || Date.now()),
-              audioUrl: item.querySelector('enclosure')?.getAttribute('url') || '',
-              duration: null,
-              source: 'rss',
-              feedName: feed.name,
-              category: feed.category,
-              isLive: false
-            }));
-            
-            // Mark recent episodes as "live"
-            episodes.forEach(ep => {
-              const hoursSincePublish = (Date.now() - ep.pubDate) / (1000 * 60 * 60);
-              if (hoursSincePublish < 24) {
-                ep.isLive = true;
-              }
-            });
-            
-            return episodes;
-          }
+          // Add feed metadata and mark live episodes
+          return episodes.map(ep => ({
+            ...ep,
+            feedName: feed.name,
+            category: feed.category,
+            source: 'rss',
+            isLive: ep.isLive || false
+          }));
         } else {
-          // For development, return mock data instead of failing
-          return [
-            {
-              id: `mock-${feed.name}-1`,
-              title: `Latest from ${feed.name}`,
-              author: feed.name,
-              description: `Recent episode from ${feed.description}`,
-              pubDate: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000),
-              audioUrl: null,
-              duration: 1800 + Math.random() * 1200,
-              source: 'rss',
-              feedName: feed.name,
-              category: feed.category,
-              isLive: Math.random() > 0.7
-            }
-          ];
+          console.warn(`Failed to fetch ${feed.name}: ${response.status}`);
+          return [];
         }
       } catch (error) {
         console.error(`Error fetching ${feed.name}:`, error);
@@ -182,39 +174,55 @@ export default function LiveFeedV2({ onPlayEpisode }) {
     return results.flat();
   };
 
-  // Fetch Podcast Index trending
+  // Fetch trending podcasts through backend
   const fetchPodcastIndex = async () => {
     try {
-      // Podcast Index requires API key and secret
-      // For demo, using mock data
-      const mockTrending = [
-        {
-          id: 'pi-1',
-          title: 'The Future of Telemedicine Post-COVID',
-          author: 'Healthcare Horizons',
-          description: 'Expert panel discusses permanent changes in healthcare delivery',
-          image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=300',
-          source: 'podcast-index',
-          audioUrl: 'https://example.com/trending1.mp3',
-          trendingRank: 1,
-          downloads: 15420
+      const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/trending', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        {
-          id: 'pi-2',
-          title: 'Robotics in Surgery: Year in Review',
-          author: 'MedTech Weekly',
-          description: 'Breakthrough robotic procedures that saved lives in 2024',
-          image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300',
-          source: 'podcast-index',
-          audioUrl: 'https://example.com/trending2.mp3',
-          trendingRank: 2,
-          downloads: 12350
-        }
-      ];
+        body: JSON.stringify({ 
+          categories: ['medical', 'dental', 'healthcare', 'ai'],
+          limit: 10
+        })
+      });
       
-      return mockTrending;
+      if (response.ok) {
+        const trending = await response.json();
+        return trending.map((item, index) => ({
+          ...item,
+          source: 'trending',
+          trendingRank: index + 1
+        }));
+      } else {
+        // Fallback mock data if backend fails
+        return [
+          {
+            id: 'trending-1',
+            title: 'The Future of Telemedicine Post-COVID',
+            author: 'Healthcare Horizons',
+            description: 'Expert panel discusses permanent changes in healthcare delivery',
+            image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=300',
+            source: 'trending',
+            trendingRank: 1,
+            downloads: 15420
+          },
+          {
+            id: 'trending-2',
+            title: 'Robotics in Surgery: Year in Review',
+            author: 'MedTech Weekly',
+            description: 'Breakthrough robotic procedures that saved lives in 2024',
+            image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300',
+            source: 'trending',
+            trendingRank: 2,
+            downloads: 12350
+          }
+        ];
+      }
     } catch (error) {
-      console.error('Error fetching Podcast Index:', error);
+      console.error('Error fetching trending:', error);
       return [];
     }
   };
