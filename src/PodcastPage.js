@@ -3,7 +3,7 @@ import { Box, Typography, Container, Tabs, Tab, Paper } from '@mui/material';
 import NavBar from './components/NavBar';
 import StarryBackground from './components/StarryBackground';
 import OrbContextProvider from './components/OrbContextProvider';
-import Podcasts from './components/Podcasts';
+import PodcastsV2 from './components/PodcastsV2';
 import PodcastHero from './components/PodcastHero';
 import LiveFeed from './components/LiveFeed';
 import Footer from './components/Footer';
@@ -50,15 +50,16 @@ export default function PodcastPage() {
       const localEpisodes = [
         {
           id: 'local-1',
-          title: 'Venus AI ~ Evolution Products & Market Position',
-          description: 'An in-depth discussion about Venus AI\'s evolution, product strategy, and market positioning.',
-          url: process.env.PUBLIC_URL + '/podcasts/Venus Ai ~ Evolution Products & Market Position.mp3',
+          title: 'AI Success Stories: How 3 Practices Doubled Their Patient Satisfaction',
+          description: 'Real stories from dental practices using AI to transform patient care. Learn how Dr. Sarah Chen reduced wait times by 67%, Dr. Marcus Johnson eliminated diagnosis errors, and Dr. Emily Rodriguez expanded access to underserved communities.',
+          url: process.env.PUBLIC_URL + '/podcasts/ai-success-stories.mp3',
           isLocal: true,
-          author: 'RepSpheres Team',
-          image_url: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=800',
-          category: 'Dental Innovation',
-          duration: 3600,
-          publishedDate: new Date('2024-01-01')
+          author: 'Dr. Jason Garcia & RepSpheres Team',
+          image_url: 'https://images.unsplash.com/photo-1559028012-481c04fa702d?w=800',
+          category: 'AI Success Stories',
+          duration: 2400, // 40 minutes
+          publishedDate: new Date(),
+          status: 'published'
         }
       ];
       
@@ -219,7 +220,7 @@ export default function PodcastPage() {
         
         {/* Content based on active tab */}
         <Box id="episodes" sx={{ minHeight: '60vh' }}>
-          {activeTab === 0 && <Podcasts episodes={episodes} />}
+          {activeTab === 0 && <PodcastsV2 episodes={episodes} />}
           {activeTab === 1 && (
             <Container maxWidth="lg">
               <LiveFeed />
