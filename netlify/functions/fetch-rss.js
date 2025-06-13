@@ -1,6 +1,4 @@
 // Netlify Function to fetch RSS feeds server-side
-const fetch = require('node-fetch');
-
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -29,7 +27,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Fetch the RSS feed
+    // Fetch the RSS feed using native fetch (Node 18+)
     const response = await fetch(feedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; PodcastAggregator/1.0)',
