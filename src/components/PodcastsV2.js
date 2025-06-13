@@ -139,11 +139,13 @@ export default function PodcastsV2({ episodes = [] }) {
             px: 2,
             py: 3,
             fontSize: '0.9rem',
-            backgroundColor: activeSection === section.id ? 'var(--secondary, #00ffc6)' : 'rgba(255,255,255,0.1)',
-            color: activeSection === section.id ? '#000' : '#fff',
-            border: '1px solid transparent',
+            backgroundColor: activeSection === section.id ? 'rgba(0, 255, 198, 0.2)' : 'rgba(255,255,255,0.1)',
+            color: activeSection === section.id ? 'var(--secondary, #00ffc6)' : '#fff',
+            border: activeSection === section.id ? '1px solid var(--secondary, #00ffc6)' : '1px solid transparent',
+            fontWeight: activeSection === section.id ? 600 : 400,
             '&:hover': {
-              backgroundColor: activeSection === section.id ? 'var(--secondary, #00ffc6)' : 'rgba(255,255,255,0.2)'
+              backgroundColor: activeSection === section.id ? 'rgba(0, 255, 198, 0.3)' : 'rgba(255,255,255,0.2)',
+              borderColor: 'var(--secondary, #00ffc6)'
             }
           }}
         />
@@ -192,9 +194,10 @@ export default function PodcastsV2({ episodes = [] }) {
                       position: 'absolute',
                       top: 10,
                       right: 10,
-                      backgroundColor: index === 0 ? '#FFD700' : 'rgba(255,255,255,0.2)',
-                      color: index === 0 ? '#000' : '#fff',
-                      fontWeight: 'bold'
+                      backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.9)' : 'rgba(255,255,255,0.2)',
+                      color: index === 0 ? 'rgba(0,0,0,0.9)' : '#fff',
+                      fontWeight: 'bold',
+                      border: index === 0 ? '1px solid #FFD700' : '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                   
@@ -242,11 +245,20 @@ export default function PodcastsV2({ episodes = [] }) {
                       disabled={votedEpisodes.includes(episode.id)}
                       sx={{
                         backgroundColor: votedEpisodes.includes(episode.id) 
-                          ? 'rgba(255,255,255,0.2)' 
-                          : 'var(--secondary, #00ffc6)',
-                        color: votedEpisodes.includes(episode.id) ? '#fff' : '#000',
+                          ? 'rgba(255,255,255,0.1)' 
+                          : 'rgba(0, 255, 198, 0.9)',
+                        color: votedEpisodes.includes(episode.id) ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.9)',
                         fontWeight: 'bold',
-                        py: 1.5
+                        py: 1.5,
+                        border: votedEpisodes.includes(episode.id) 
+                          ? '1px solid rgba(255,255,255,0.2)' 
+                          : '1px solid var(--secondary, #00ffc6)',
+                        '&:hover': {
+                          backgroundColor: votedEpisodes.includes(episode.id) 
+                            ? 'rgba(255,255,255,0.15)' 
+                            : 'var(--secondary, #00ffc6)',
+                          color: votedEpisodes.includes(episode.id) ? '#fff' : '#000'
+                        }
                       }}
                     >
                       {votedEpisodes.includes(episode.id) ? 'Voted ✓' : 'Vote for This'}
@@ -388,8 +400,9 @@ export default function PodcastsV2({ episodes = [] }) {
               sx={{
                 width: 60,
                 height: 60,
-                backgroundColor: 'var(--secondary, #00ffc6)',
-                color: '#000'
+                backgroundColor: 'rgba(0, 255, 198, 0.2)',
+                color: 'var(--secondary, #00ffc6)',
+                border: '2px solid var(--secondary, #00ffc6)'
               }}
             >
               <PlayArrowIcon sx={{ fontSize: 30 }} />
