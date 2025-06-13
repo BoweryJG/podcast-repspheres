@@ -5,7 +5,7 @@ import StarryBackground from './components/StarryBackground';
 import OrbContextProvider from './components/OrbContextProvider';
 import PodcastsV2 from './components/PodcastsV2';
 import PodcastHero from './components/PodcastHero';
-import LiveFeed from './components/LiveFeed';
+import LiveFeedV2 from './components/LiveFeedV2';
 import Footer from './components/Footer';
 import ThemeToggle from './components/ThemeToggle';
 import { AuthProvider } from './contexts/AuthContext';
@@ -222,9 +222,13 @@ export default function PodcastPage() {
         <Box id="episodes" sx={{ minHeight: '60vh' }}>
           {activeTab === 0 && <PodcastsV2 episodes={episodes} />}
           {activeTab === 1 && (
-            <Container maxWidth="lg">
-              <LiveFeed />
-            </Container>
+            <LiveFeedV2 
+              onPlayEpisode={(episode) => {
+                // Handle playing external episodes
+                console.log('Playing external episode:', episode);
+                // You can integrate this with your audio player
+              }}
+            />
           )}
         </Box>
         
