@@ -77,6 +77,15 @@ const getUserId = () => {
   return userId;
 };
 
+// Default podcast thumbnails
+const defaultThumbnails = [
+  'https://images.unsplash.com/photo-1559028012-481c04fa702d?w=300&h=300&fit=crop', // Dental
+  'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=300&h=300&fit=crop', // Medical
+  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=300&fit=crop', // Tech
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop', // AI
+  'https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?w=300&h=300&fit=crop'  // Dental tools
+];
+
 export default function Podcasts({ episodes = [] }) {
   const [selectedEpisode, setSelectedEpisode] = useState(null);
   const [expandedEpisode, setExpandedEpisode] = useState(null);
@@ -148,7 +157,7 @@ export default function Podcasts({ episodes = [] }) {
     duration: ep.duration || Math.floor(Math.random() * 3600) + 1800, // 30-90 minutes
     publishedDate: ep.publishedDate || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
     category: ep.category || ['Dental Innovation', 'Practice Management', 'Patient Care', 'Aesthetics'][index % 4],
-    thumbnail: ep.thumbnail || `https://via.placeholder.com/300x300?text=Episode+${index + 1}`,
+    thumbnail: ep.thumbnail || ep.image_url || defaultThumbnails[index % defaultThumbnails.length],
     listens: ep.listens || Math.floor(Math.random() * 10000) + 1000
   }));
 
