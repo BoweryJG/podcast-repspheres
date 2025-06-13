@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -14,7 +14,10 @@ import {
   IconButton,
   Collapse,
   Fade,
-  Zoom
+  Zoom,
+  Badge,
+  LinearProgress,
+  Tooltip
 } from '@mui/material';
 import PodcastsIcon from '@mui/icons-material/Podcasts';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -24,7 +27,12 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import CommentIcon from '@mui/icons-material/Comment';
+import ShareIcon from '@mui/icons-material/Share';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import AudioPlayer from './AudioPlayer';
+import supabase from '../supabase';
 
 // Format duration from seconds to readable format
 const formatDuration = (seconds) => {
@@ -59,9 +67,21 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString();
 };
 
+// Get or create user ID for tracking
+const getUserId = () => {
+  let userId = localStorage.getItem('podcast_user_id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('podcast_user_id', userId);
+  }
+  return userId;
+};
+
 export default function Podcasts({ episodes = [] }) {
   const [selectedEpisode, setSelectedEpisode] = useState(null);
   const [expandedEpisode, setExpandedEpisode] = useState(null);
+  const [votedEpisodes, setVotedEpisodes] = useState([]);
+  const [engagementData, setEngagementData] = useState({});
 
   const handleSelectEpisode = (episode) => {
     setSelectedEpisode(episode);
@@ -71,6 +91,55 @@ export default function Podcasts({ episodes = [] }) {
 
   const handleExpandEpisode = (episodeId) => {
     setExpandedEpisode(expandedEpisode === episodeId ? null : episodeId);
+  };
+
+  // Load voted episodes from localStorage
+  useEffect(() => {
+    const voted = JSON.parse(localStorage.getItem('voted_podcasts') || '[]');
+    setVotedEpisodes(voted);
+  }, []);
+
+  // Track engagement
+  const trackEngagement = async (episodeId, type) => {
+    try {
+      // Call the edge function
+      const response = await fetch(`https://cbopynuvhcymbumjnvay.supabase.co/functions/v1/engage`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNib3B5bnV2aGN5bWJ1bWpudmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTUxNzMsImV4cCI6MjA1OTU3MTE3M30.UZElMkoHugIt984RtYWyfrRuv2rB67opQdCrFVPCfzU`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          podcast_id: episodeId,
+          type: type,
+          user_id: getUserId()
+        })
+      });
+
+      if (response.ok) {
+        // Update local engagement data
+        setEngagementData(prev => ({
+          ...prev,
+          [episodeId]: {
+            ...prev[episodeId],
+            [`${type}_count`]: (prev[episodeId]?.[`${type}_count`] || 0) + 1
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error tracking engagement:', error);
+    }
+  };
+
+  // Vote for an episode
+  const voteForEpisode = async (episode) => {
+    if (votedEpisodes.includes(episode.id)) return;
+
+    await trackEngagement(episode.id, 'comment'); // Voting counts as strong engagement
+    
+    const newVoted = [...votedEpisodes, episode.id];
+    setVotedEpisodes(newVoted);
+    localStorage.setItem('voted_podcasts', JSON.stringify(newVoted));
   };
 
   // Enhanced mock episodes with more metadata
@@ -215,6 +284,31 @@ export default function Podcasts({ episodes = [] }) {
                         }}>
                           EP {index + 1}
                         </Box>
+                        
+                        {/* Pre-release badge */}
+                        {ep.status === 'pre_released' && (
+                          <Tooltip title="Vote for this episode to be produced next!">
+                            <Box sx={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 50,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              bgcolor: 'rgba(255, 0, 0, 0.9)',
+                              color: '#fff',
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: 1,
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              animation: 'pulse 2s infinite'
+                            }}>
+                              <NewReleasesIcon sx={{ fontSize: 16 }} />
+                              VOTE NOW
+                            </Box>
+                          </Tooltip>
+                        )}
                         {ep.isLocal && (
                           <Box sx={{
                             position: 'absolute',
@@ -294,6 +388,84 @@ export default function Podcasts({ episodes = [] }) {
                           </IconButton>
                         )}
                         
+                        {/* Engagement Stats for Pre-released */}
+                        {ep.status === 'pre_released' && (
+                          <Box sx={{ mt: 2, mb: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                              <Tooltip title="Views">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <IconButton 
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      trackEngagement(ep.id, 'view');
+                                    }}
+                                    sx={{ p: 0.5, color: 'rgba(255, 255, 255, 0.7)' }}
+                                  >
+                                    <Badge badgeContent={engagementData[ep.id]?.view_count || ep.view_count || 0} color="secondary">
+                                      <ThumbUpIcon sx={{ fontSize: 20 }} />
+                                    </Badge>
+                                  </IconButton>
+                                </Box>
+                              </Tooltip>
+                              
+                              <Tooltip title="Comments">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <IconButton 
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      trackEngagement(ep.id, 'comment');
+                                    }}
+                                    sx={{ p: 0.5, color: 'rgba(255, 255, 255, 0.7)' }}
+                                  >
+                                    <Badge badgeContent={engagementData[ep.id]?.comment_count || ep.comment_count || 0} color="secondary">
+                                      <CommentIcon sx={{ fontSize: 20 }} />
+                                    </Badge>
+                                  </IconButton>
+                                </Box>
+                              </Tooltip>
+                              
+                              <Tooltip title="Share">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <IconButton 
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      trackEngagement(ep.id, 'share');
+                                    }}
+                                    sx={{ p: 0.5, color: 'rgba(255, 255, 255, 0.7)' }}
+                                  >
+                                    <Badge badgeContent={engagementData[ep.id]?.share_count || ep.share_count || 0} color="secondary">
+                                      <ShareIcon sx={{ fontSize: 20 }} />
+                                    </Badge>
+                                  </IconButton>
+                                </Box>
+                              </Tooltip>
+                            </Box>
+                            
+                            {/* Engagement score progress bar */}
+                            <Box>
+                              <Typography variant="caption" color="rgba(255, 255, 255, 0.7)">
+                                Engagement Score
+                              </Typography>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={Math.min(100, (ep.engagement_score || 0) / 10)} 
+                                sx={{ 
+                                  mt: 0.5,
+                                  height: 6,
+                                  borderRadius: 3,
+                                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                  '& .MuiLinearProgress-bar': {
+                                    bgcolor: 'var(--secondary, #00ffc6)'
+                                  }
+                                }}
+                              />
+                            </Box>
+                          </Box>
+                        )}
+                        
                         {/* Metadata */}
                         <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -314,22 +486,52 @@ export default function Podcasts({ episodes = [] }) {
                     
                     {/* Action buttons */}
                     <Box sx={{ p: 2, pt: 0, display: 'flex', gap: 1 }}>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        startIcon={<PlayArrowIcon />}
-                        onClick={() => handleSelectEpisode(ep)}
-                        sx={{
-                          bgcolor: 'var(--secondary, #00ffc6)',
-                          color: '#000',
-                          fontWeight: 600,
-                          '&:hover': {
-                            bgcolor: '#00d6a4'
-                          }
-                        }}
-                      >
-                        Play Now
-                      </Button>
+                      {ep.status === 'pre_released' ? (
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          startIcon={votedEpisodes.includes(ep.id) ? <ThumbUpIcon /> : <NewReleasesIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            voteForEpisode(ep);
+                          }}
+                          disabled={votedEpisodes.includes(ep.id)}
+                          sx={{
+                            bgcolor: votedEpisodes.includes(ep.id) 
+                              ? 'rgba(255, 255, 255, 0.2)' 
+                              : 'var(--secondary, #00ffc6)',
+                            color: votedEpisodes.includes(ep.id) ? 'rgba(255, 255, 255, 0.7)' : '#000',
+                            fontWeight: 600,
+                            '&:hover': {
+                              bgcolor: votedEpisodes.includes(ep.id) 
+                                ? 'rgba(255, 255, 255, 0.2)' 
+                                : '#00d6a4'
+                            },
+                            '&:disabled': {
+                              color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                          }}
+                        >
+                          {votedEpisodes.includes(ep.id) ? 'Voted ✓' : 'Vote for Production'}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          startIcon={<PlayArrowIcon />}
+                          onClick={() => handleSelectEpisode(ep)}
+                          sx={{
+                            bgcolor: 'var(--secondary, #00ffc6)',
+                            color: '#000',
+                            fontWeight: 600,
+                            '&:hover': {
+                              bgcolor: '#00d6a4'
+                            }
+                          }}
+                        >
+                          Play Now
+                        </Button>
+                      )}
                       {ep.isLocal && (
                         <IconButton
                           href={ep.url}
@@ -354,6 +556,21 @@ export default function Podcasts({ episodes = [] }) {
           </Grid>
         )}
       </Container>
+      
+      {/* CSS for pulse animation */}
+      <style jsx global>{`
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+          }
+        }
+      `}</style>
     </Box>
   );
 }

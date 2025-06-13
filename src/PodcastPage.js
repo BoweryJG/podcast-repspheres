@@ -67,7 +67,7 @@ export default function PodcastPage() {
       
       // Try to fetch from Supabase
       try {
-        const { data, error } = await supabase.from('podcasts').select('*');
+        const { data, error } = await supabase.from('podcasts').select('*').order('pre_release_date', { ascending: false });
         if (error) throw error;
         if (data && data.length > 0) {
           // Transform Supabase data to match the expected format
@@ -80,9 +80,15 @@ export default function PodcastPage() {
             image_url: episode.image_url,
             thumbnail: episode.image_url, // Use image_url as thumbnail
             isLocal: false,
+            status: episode.status, // Include status for pre-release detection
+            engagement_score: episode.engagement_score,
+            view_count: episode.view_count,
+            comment_count: episode.comment_count,
+            share_count: episode.share_count,
+            pre_release_date: episode.pre_release_date,
             category: ['Dental Innovation', 'Practice Management', 'Patient Care', 'Aesthetics'][index % 4],
-            duration: Math.floor(Math.random() * 3600) + 1800, // Random duration for now
-            publishedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+            duration: episode.duration || Math.floor(Math.random() * 3600) + 1800, // Random duration if not set
+            publishedDate: episode.pre_release_date || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
           }));
           
           // Combine local episodes with remote episodes
@@ -114,9 +120,15 @@ export default function PodcastPage() {
                   image_url: episode.image_url,
                   thumbnail: episode.image_url, // Use image_url as thumbnail
                   isLocal: false,
+                  status: episode.status, // Include status for pre-release detection
+                  engagement_score: episode.engagement_score,
+                  view_count: episode.view_count,
+                  comment_count: episode.comment_count,
+                  share_count: episode.share_count,
+                  pre_release_date: episode.pre_release_date,
                   category: ['Dental Innovation', 'Practice Management', 'Patient Care', 'Aesthetics'][index % 4],
-                  duration: Math.floor(Math.random() * 3600) + 1800, // Random duration for now
-                  publishedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+                  duration: episode.duration || Math.floor(Math.random() * 3600) + 1800, // Random duration if not set
+                  publishedDate: episode.pre_release_date || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
                 }));
                 
                 // Combine local episodes with remote episodes
