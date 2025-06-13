@@ -1,6 +1,6 @@
 # Backend API Endpoints for Live Podcast Feeds
 
-Your frontend now calls these endpoints on your backend: `https://bowerycreative-backend.onrender.com`
+Your frontend now calls these endpoints on your backend: `https://osbackend-zl1h.onrender.com`
 
 ## Required Endpoints
 

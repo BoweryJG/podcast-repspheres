@@ -82,7 +82,7 @@ export default function LiveFeedV2({ onPlayEpisode }) {
   // Fetch Apple Podcasts through backend
   const fetchApplePodcasts = async () => {
     try {
-      const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/apple', {
+      const response = await fetch('https://osbackend-zl1h.onrender.com/api/feeds/apple', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export default function LiveFeedV2({ onPlayEpisode }) {
     // Fetch multiple RSS feeds through your backend
     const feedPromises = feedsToFetch.slice(0, 8).map(async (feed) => {
       try {
-        const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/rss', {
+        const response = await fetch('https://osbackend-zl1h.onrender.com/api/feeds/rss', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ export default function LiveFeedV2({ onPlayEpisode }) {
   // Fetch trending podcasts through backend
   const fetchPodcastIndex = async () => {
     try {
-      const response = await fetch('https://bowerycreative-backend.onrender.com/api/feeds/trending', {
+      const response = await fetch('https://osbackend-zl1h.onrender.com/api/feeds/trending', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
