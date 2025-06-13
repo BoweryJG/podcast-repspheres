@@ -80,7 +80,7 @@ const getNavLinks = (currentUrl, isAdmin) => {
     {
       key: 'podcast',
       label: 'Podcast',
-      href: '/?page=podcast',
+      href: 'https://podcast.repspheres.com',
       icon: <PodcastsIcon fontSize="small" sx={{ color: ACCENT_COLOR }} />,
       description: 'Industry insights & interviews'
     },
@@ -108,7 +108,7 @@ const getNavLinks = (currentUrl, isAdmin) => {
   }
 
   // Hide podcast link when already on the podcast page
-  if (currentUrl.includes('/podcast.html') || currentUrl.includes('page=podcast')) {
+  if (currentUrl.includes('podcast.repspheres.com')) {
     return links.filter((l) => l.key !== 'podcast');
   }
 
@@ -130,8 +130,8 @@ const isLinkActive = (href, currentUrl) => {
   }
   
   // Special case for podcast page
-  if (href === '/?page=podcast') {
-    return currentUrl.includes('page=podcast') || currentUrl.includes('/podcast.html');
+  if (href === 'https://podcast.repspheres.com') {
+    return currentUrl.includes('podcast.repspheres.com');
   }
   
   return currentUrl.includes(href);

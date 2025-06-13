@@ -239,6 +239,13 @@ export default function Podcasts({ episodes = [] }) {
                           {ep.title}
                         </Typography>
                         
+                        {/* Author */}
+                        {ep.author && (
+                          <Typography variant="body2" color="rgba(255, 255, 255, 0.6)" sx={{ mb: 1 }}>
+                            by {ep.author}
+                          </Typography>
+                        )}
+                        
                         {/* Category chip */}
                         <Chip 
                           label={ep.category} 

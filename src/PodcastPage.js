@@ -53,18 +53,13 @@ export default function PodcastPage() {
           title: 'Venus AI ~ Evolution Products & Market Position',
           description: 'An in-depth discussion about Venus AI\'s evolution, product strategy, and market positioning.',
           url: process.env.PUBLIC_URL + '/podcasts/Venus Ai ~ Evolution Products & Market Position.mp3',
-          isLocal: true
+          isLocal: true,
+          author: 'RepSpheres Team',
+          image_url: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=800',
+          category: 'Dental Innovation',
+          duration: 3600,
+          publishedDate: new Date('2024-01-01')
         }
-        // To add more podcasts, simply copy the MP3 file to the public/podcasts directory
-        // and add a new entry here with a unique id, title, description, and url
-        // Example:
-        // {
-        //   id: 'local-2',
-        //   title: 'New Podcast Title',
-        //   description: 'Description of the new podcast',
-        //   url: process.env.PUBLIC_URL + '/podcasts/filename.mp3',
-        //   isLocal: true
-        // }
       ];
       
       // Set local episodes immediately
@@ -75,8 +70,24 @@ export default function PodcastPage() {
         const { data, error } = await supabase.from('podcasts').select('*');
         if (error) throw error;
         if (data && data.length > 0) {
+          // Transform Supabase data to match the expected format
+          const supabaseEpisodes = data.map((episode, index) => ({
+            id: episode.id,
+            title: episode.title,
+            description: episode.description,
+            author: episode.author || 'Guest Speaker',
+            url: episode.audio_url, // This might be null for now
+            image_url: episode.image_url,
+            thumbnail: episode.image_url, // Use image_url as thumbnail
+            isLocal: false,
+            category: ['Dental Innovation', 'Practice Management', 'Patient Care', 'Aesthetics'][index % 4],
+            duration: Math.floor(Math.random() * 3600) + 1800, // Random duration for now
+            publishedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+          }));
+          
           // Combine local episodes with remote episodes
-          setEpisodes([...localEpisodes, ...data]);
+          setEpisodes([...localEpisodes, ...supabaseEpisodes]);
+          console.log('Successfully loaded podcasts from Supabase:', supabaseEpisodes.length);
         }
       } catch (err) {
         console.error('Failed to fetch podcasts from Supabase client', err);
@@ -93,8 +104,24 @@ export default function PodcastPage() {
             if (res.ok) {
               const data = await res.json();
               if (data && data.length > 0) {
+                // Transform Supabase data to match the expected format
+                const supabaseEpisodes = data.map((episode, index) => ({
+                  id: episode.id,
+                  title: episode.title,
+                  description: episode.description,
+                  author: episode.author || 'Guest Speaker',
+                  url: episode.audio_url, // This might be null for now
+                  image_url: episode.image_url,
+                  thumbnail: episode.image_url, // Use image_url as thumbnail
+                  isLocal: false,
+                  category: ['Dental Innovation', 'Practice Management', 'Patient Care', 'Aesthetics'][index % 4],
+                  duration: Math.floor(Math.random() * 3600) + 1800, // Random duration for now
+                  publishedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+                }));
+                
                 // Combine local episodes with remote episodes
-                setEpisodes([...localEpisodes, ...data]);
+                setEpisodes([...localEpisodes, ...supabaseEpisodes]);
+                console.log('Successfully loaded podcasts via fetch API:', supabaseEpisodes.length);
               }
             }
           } catch (fetchErr) {

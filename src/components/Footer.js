@@ -3,7 +3,7 @@ import { Box, Typography, Link, Container } from '@mui/material';
 
 const footerLinks = [
   { href: '/blog.html', label: 'Blog' },
-  { href: '/podcast', label: 'Podcast' },
+  { href: 'https://podcast.repspheres.com', label: 'Podcast' },
   { href: '/dashboard/vault.html', label: 'Intelligence Vault' },
   { href: '/workspace.html', label: 'Sphere OS' },
   { href: '/privacy.html', label: 'Privacy Policy' },
