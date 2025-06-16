@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import supabase from '../supabase';
+import { 
+  setupCrossDomainAuthListener, 
+  broadcastAuthState, 
+  storeReturnUrl, 
+  getMainDomain,
+  handleCrossDomainRedirect,
+  isOnSubdomain 
+} from '../utils/crossDomainAuth';
 
 // Create an authentication context
 const AuthContext = createContext();
@@ -19,10 +27,17 @@ export function AuthProvider({ children }) {
   // Function to sign in with Google
   const signInWithGoogle = async () => {
     try {
+      // Store current URL before redirecting
+      storeReturnUrl(window.location.href);
+      
+      // Always redirect to main domain for OAuth
+      const mainDomain = getMainDomain();
+      const redirectUrl = `${mainDomain}/auth/callback`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
         },
       });
       if (error) throw error;
@@ -34,10 +49,17 @@ export function AuthProvider({ children }) {
   // Function to sign in with Facebook
   const signInWithFacebook = async () => {
     try {
+      // Store current URL before redirecting
+      storeReturnUrl(window.location.href);
+      
+      // Always redirect to main domain for OAuth
+      const mainDomain = getMainDomain();
+      const redirectUrl = `${mainDomain}/auth/callback`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
         },
       });
       if (error) throw error;
@@ -54,6 +76,12 @@ export function AuthProvider({ children }) {
         password,
       });
       if (error) throw error;
+      
+      // Broadcast auth state to other domains
+      if (data.session) {
+        broadcastAuthState(data.session);
+      }
+      
       return data;
     } catch (error) {
       console.error('Error signing in with email:', error.message);
@@ -72,6 +100,12 @@ export function AuthProvider({ children }) {
         },
       });
       if (error) throw error;
+      
+      // Broadcast auth state to other domains
+      if (data.session) {
+        broadcastAuthState(data.session);
+      }
+      
       return data;
     } catch (error) {
       console.error('Error signing up with email:', error.message);
@@ -95,10 +129,17 @@ export function AuthProvider({ children }) {
   // Generic function to sign in with any OAuth provider
   const signInWithProvider = async (provider) => {
     try {
+      // Store current URL before redirecting
+      storeReturnUrl(window.location.href);
+      
+      // Always redirect to main domain for OAuth
+      const mainDomain = getMainDomain();
+      const redirectUrl = `${mainDomain}/auth/callback`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
         },
       });
       if (error) throw error;
@@ -114,6 +155,9 @@ export function AuthProvider({ children }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
+      
+      // Broadcast logout to other domains
+      broadcastAuthState(null);
     } catch (error) {
       console.error('Error signing out:', error.message);
     }
@@ -125,11 +169,24 @@ export function AuthProvider({ children }) {
     const initializeAuth = async () => {
       setLoading(true);
       
+      // Set up cross-domain auth listener
+      setupCrossDomainAuthListener(supabase);
+      
+      // Check for cross-domain redirect
+      const wasRedirected = await handleCrossDomainRedirect(supabase);
+      if (wasRedirected) {
+        setLoading(false);
+        return;
+      }
+      
       // Check active session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         setUser(currentUser);
+        
+        // Broadcast initial auth state if we have a session
+        broadcastAuthState(session);
       }
       
       // Set up auth state change listener
@@ -138,8 +195,14 @@ export function AuthProvider({ children }) {
           if (session) {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             setUser(currentUser);
+            
+            // Broadcast auth state changes to other domains
+            broadcastAuthState(session);
           } else {
             setUser(null);
+            
+            // Broadcast logout to other domains
+            broadcastAuthState(null);
           }
           setLoading(false);
         }
